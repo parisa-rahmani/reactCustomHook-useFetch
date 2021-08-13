@@ -5,9 +5,14 @@ const useFetch = url => {
   const [data, setData] = useState([]);
   const [errorMessage, setErrorMessage] = useState('something went wrong');
 
+  const abortControl = new AbortController();
+
   const getData = useCallback(async () => {
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: abortControl.signal });
+      if (!response.ok) {
+        throw Error('could not fetch the data');
+      }
       const resData = await response.json();
       setData(resData);
       setLoading(false);
@@ -19,6 +24,8 @@ const useFetch = url => {
 
   useEffect(() => {
     getData();
+    // cleanup pause the fetch request on unmount component
+    return () => abortControl.abort();
   }, [url, getData]);
 
   return { loading, data, errorMessage };
